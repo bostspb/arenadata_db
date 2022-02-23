@@ -1,5 +1,7 @@
 --
--- Лабораторная работа №5
+-- Лабораторная работа №5 - MVCC (MultiVersion Concurrency Control)
+--
+-- Цели. Реализация. Bloat. VACUUM. VACUUM FULL. Пример. Регламенты.
 --
 /*
 1. Создайте таблицу table6: create table table6 (id int, state text);

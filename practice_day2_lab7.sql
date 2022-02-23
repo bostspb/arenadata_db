@@ -1,18 +1,22 @@
 --
--- Лабораторная работа №7
+-- Лабораторная работа №7 - Статистика
+--
+-- Цели. Сбор статистики.
 --
 /*
 1. Убедитесь, что таблицы table1 и table2 существуют в базе данных с помощью команды \d+
 2. Установите значение выделенной памяти для запроса в рамках сессии: set statement_mem = 20000;
-3. Вставьте данные в таблицу table1: INSERT INTO table1 SELECT gen, gen, gen::text || 'text1', gen::text || 'text2'
-FROM generate_series (1000000,4000000) gen;
-4. Постройте план выполнения запроса с помощью EXPLAIN ANALYZE следующего запроса: SELECT * FROM table1 t1 join table2 t2
-on t1.id1 = t2.id1;
+3. Вставьте данные в таблицу table1:
+   INSERT INTO table1 SELECT gen, gen, gen::text || 'text1', gen::text || 'text2'
+   FROM generate_series (1000000,4000000) gen;
+4. Постройте план выполнения запроса с помощью EXPLAIN ANALYZE следующего запроса:
+   SELECT * FROM table1 t1 join table2 t2 on t1.id1 = t2.id1;
 5. Выполните сбор статистики для таблицы table1.
-6. Снова постройте план выполнения запроса с помощью EXPLAIN ANALYZE следующего запроса: SELECT * FROM table1 t1 join table2
-t2 on t1.id1 = t2.id1;
-7. Сравните полученные планы. Обратите внимание на ожидаемое число строк в плане и сравните его с актуальным (rows out) для таблицы
-table1. Также обратит внимание по какой таблице строится hash.
+6. Снова постройте план выполнения запроса с помощью EXPLAIN ANALYZE следующего запроса:
+   SELECT * FROM table1 t1 join table2 t2 on t1.id1 = t2.id1;
+7. Сравните полученные планы. Обратите внимание на ожидаемое число строк в плане
+   и сравните его с актуальным (rows out) для таблицы
+   table1. Также обратит внимание по какой таблице строится hash.
 8. Обратите внимание на показатели Memory used и Memory wanted в первом плане и во втором.
 */
 
@@ -20,6 +24,7 @@ set statement_mem = 20000;
 
 INSERT INTO table1 SELECT gen, gen, gen::text || 'text1', gen::text || 'text2'
 FROM generate_series (1000000,4000000) gen;
+-- после повторной вставки в таблицу - статистика не обновляется
 
 EXPLAIN ANALYZE
 SELECT * FROM table1 t1 join table2 t2 on t1.id1 = t2.id1;
@@ -52,6 +57,10 @@ Optimizer: Pivotal Optimizer (GPORCA) version 3.88.0                            
 Execution time: 814.895 ms                                                                                                                           |
  */
 
+ -- Из-за некорректной статистики по таблице table1 оптимизатор GPORCA некорректно построил план запроса -
+ -- он переместил большую таблицу на сегменты и из-за этого не хватило выделенной памяти и пришлось ее спилить в файл.
+ -- Оптимизатор ожидал, что в таблице table1 50000 записей, а по факту оказалось 800850
+
 analyze table1;
 
 EXPLAIN ANALYZE
@@ -76,3 +85,5 @@ Memory used:  19456kB                                                           
 Optimizer: Pivotal Optimizer (GPORCA) version 3.88.0                                                                                                      |
 Execution time: 433.479 ms                                                                                                                                |
 */
+-- После пересчета статистики оптимизатор построил корректный план запросов
+
